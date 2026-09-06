@@ -73,3 +73,51 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+
+;; Use a block cursor in Normal state and a bar in Insert state.
+;; `evil-refresh-cursor' also updates the buffer that is already selected
+;; when this file is reloaded.
+(after! evil
+  (setq evil-normal-state-cursor 'box
+        evil-insert-state-cursor 'bar)
+  (evil-refresh-cursor))
+
+;; ;; disable emacs from formating brackets
+;; (defun my-disable-c-electric-indent ()
+;;   (electric-indent-local-mode -1))
+
+;; (after! cc-mode
+;;   (add-hook 'c-mode-hook #'my-disable-c-electric-indent t)
+;;   (add-hook 'c++-mode-hook #'my-disable-c-electric-indent t))
+
+;; Clangd advertises newline as an on-type formatting trigger.  Prevent Eglot
+;; from reformatting C/C++ code every time RET is pressed.
+(after! eglot
+  (add-to-list 'eglot-ignored-server-capabilities
+               :documentOnTypeFormattingProvider))
+
+;; Doom's compatibility module enables Smartparens independently of the
+;; `:config default +smartparens' flag.
+;; (remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
+;; (after! smartparens
+;;   (smartparens-global-mode -1))
+
+
+;; C: indent an unbraced body, and align braces with its control statement.
+(defun my-c-indent-setup ()
+  (setq-local c-basic-offset 4)
+  (setq-local tab-width 4)
+  (setq-local indent-tabs-mode t)
+  (c-set-offset 'substatement '+)
+  (c-set-offset 'substatement-open 0)
+  (c-set-offset 'brace-list-open 0)
+  (c-toggle-electric-state 1)
+  (electric-indent-local-mode 1))
+
+(after! cc-mode
+  (add-hook 'c-mode-hook #'my-c-indent-setup)
+  (define-key c-mode-map (kbd "RET") #'newline-and-indent)
+  (map! :map c-mode-map
+        :i "RET" #'newline-and-indent)
+  ;; Keep clangd formatting available on demand.
+  (define-key c-mode-map (kbd "C-c C-f") #'eglot-format))
